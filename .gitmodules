@@ -1,0 +1,6 @@
+[submodule "firmware/inc/Gecko_SDK"]
+	path = firmware/inc/Gecko_SDK
+	url = https://github.com/SiliconLabs/Gecko_SDK
+[submodule "firmware/inc/host-interface"]
+	path = firmware/inc/host-interface
+	url = https://github.com/LinkLabs/host-interface
