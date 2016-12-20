@@ -1,3 +1,4 @@
+#include <Scheduler.h>
 #include <Wire.h>
 #include <SymphonyLink.h>
 
