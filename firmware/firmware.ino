@@ -1,11 +1,20 @@
+#include <Wire.h>
 #include <SymphonyLink.h>
+
+#define D6T_ID (0x0A)
+#define D6T_GET_INFO (0x4C)
 
 SymphonyLink symlink;
 
-uint8_t txData[256];
-uint8_t rxData[128];
-uint8_t rxDataLength;
-uint8_t radioPath = 1;
+// Symphony Variables
+static uint8_t s_txData[256];
+static uint8_t s_rxData[128];
+static uint8_t s_rxDataLength;
+
+// D6T Sensor Variables
+static int     s_dt6_rxBuf[35];
+static float   s_dt6_ptat;
+static float   s_dt6_tempData[16];
 
 sym_module_state_t currentSymphonyState;
 sym_module_state_t lastSymphonyState;
@@ -22,7 +31,7 @@ void setup()
   symlink.begin(netToken, appToken, LL_DL_MAILBOX, 15);
 
   //Set RF path
-  symlink.setAntenna(radioPath);
+  symlink.setAntenna(1);
 
   //Update the state of the SymphonyLink module (aka Modem)
   lastSymphonyState = symlink.updateModemState();
@@ -36,20 +45,20 @@ void loop()
         case SYMPHONY_READY:
             if (SYMPHONY_TRANSMITTING != lastSymphonyState)
             {
-                txData[0]++;
-                symlink.write(txData, sizeof(txData), true);
+                s_txData[0]++;
+                symlink.write(s_txData, sizeof(s_txData), true);
 
                 Serial.print("\t... Outbound payload is ");
-                symlink.printPayload(txData, sizeof(txData));
+                symlink.printPayload(s_txData, sizeof(s_txData));
             }
             else
             {
                 if (LL_TX_STATE_SUCCESS != symlink.getTransmitState())
                 {
-                    txData[0]--;
+                    s_txData[0]--;
                 }
 
-                symlink.read(rxData, rxDataLength);
+                symlink.read(s_rxData, s_rxDataLength);
             }
             break;
     }
