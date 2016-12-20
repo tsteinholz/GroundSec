@@ -4,9 +4,6 @@
 [submodule "firmware/inc/host-interface"]
 	path = firmware/inc/host-interface
 	url = https://github.com/LinkLabs/host-interface
-[submodule "firmware/inc/FreeRTOS-Arduino"]
-	path = firmware/inc/FreeRTOS-Arduino
-	url = https://github.com/greiman/FreeRTOS-Arduino
-[submodule "firmware/inc/linklabs-arduino"]
-	path = firmware/inc/linklabs-arduino
+[submodule "firmware/libraries/linklabs-arduino"]
+	path = firmware/libraries/linklabs-arduino
 	url = https://github.com/LinkLabs/linklabs-arduino
