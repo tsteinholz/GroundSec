@@ -1,3 +1,0 @@
-[submodule "firmware/libraries/linklabs-arduino"]
-	path = firmware/libraries/linklabs-arduino
-	url = https://github.com/LinkLabs/linklabs-arduino
