@@ -31,9 +31,9 @@ static byte s_rxData[128];
 static byte s_rxDataLength;
 
 // D6T Sensor Variables TODO
-static byte  s_dt6_rxBuf[35];
-static float s_dt6_ptat;
-static byte  s_dt6_tempData[16];
+static byte     s_d6t_rxBuf[35];
+static float    s_d6t_ptat;
+static uint16_t s_d6t_tempData[16];
 
 // Application Variables TODO
 static bool s_alert;
@@ -100,7 +100,7 @@ byte calc_crc(byte data)
 }
 
 // Check if the data from the d6t is valid or not
-int D6T_checkPEC(char buf, int pPEC)
+int D6T_checkPEC(byte buf[35], int pPEC)
 {
 	byte crc = calc_crc( 0x15 );
 
@@ -121,12 +121,28 @@ void update_sensor(void)
 
 	delay(1);
 
-	Wire.requestFrom(D6T_ADDRESS, 19);
-	for(int i = 0; i < 19; i++)
+	Wire.requestFrom(D6T_ADDRESS, 35);
+	for(byte i = 0; i < 35; i++)
     {
-	    in[i] = Wire.read();           // read char 0-18 (2*(8+1)+1=19)
+	    s_d6t_rxBuf[i] = Wire.read();
   	}
   	Wire.endTransmission();
+
+    s_d6t_ptat = ((float)s_d6t_rxBuf[1] << 8) | s_d6t_rxBuf[0];
+
+    for (byte i = 1; i < 17; i++)
+    {
+        s_d6t_tempData[i-1] = ((uint16_t)s_d6t_rxBuf[i * 2 + 1] << 8) | s_d6t_rxBuf[i * 2];
+    }
+
+    if (D6T_checkPEC(char buf, s_d6t_rxBuf[34]))
+    {
+        // TODO: Passed crc check
+    }
+    else
+    {
+        // TODO: Failed crc check
+    }
 }
 
 void loop()
