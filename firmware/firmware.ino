@@ -16,10 +16,10 @@
 //----------------------------------------------------------------------------//
 
 #include <Scheduler.h>
-#include <Wire.h>
 #include <SymphonyLink.h>
+#include <Wire.h>
 
-#define D6T_ADDRESS  (0x0A)
+#define D6T_ADDRESS (0x0A)
 #define D6T_GET_INFO (0x4C)
 
 // Symphony Variables
@@ -31,8 +31,8 @@ static byte s_rxData[128];
 static byte s_rxDataLength;
 
 // D6T Sensor Variables TODO
-static byte     s_d6t_rxBuf[35];
-static float    s_d6t_ptat;
+static byte s_d6t_rxBuf[35];
+static float s_d6t_ptat;
 static uint16_t s_d6t_tempData[16];
 
 // Application Variables TODO
@@ -43,19 +43,20 @@ void setup()
     // Debug Prints
     Serial.begin(115200);
 
-    // Initialize the SymphonyLink object and open UART communications with the module on Serial1.
-    symlink.begin(0x4f50454e, { 0x0 }, LL_DL_MAILBOX, 15);
+    // Initialize the SymphonyLink object and open UART communications with the
+    // module on Serial1.
+    symlink.begin(0x4f50454e, {0x0}, LL_DL_MAILBOX, 15);
 
-    //Set RF path
+    // Set RF path
     symlink.setAntenna(1);
 
     // Update the state of the SymphonyLink module (aka Modem)
     lastSymphonyState = symlink.updateModemState();
 
-	// Initialize alert variable
+    // Initialize alert variable
     s_alert = false;
 
-	// Start the symphony and sensor tasks
+    // Start the symphony and sensor tasks
     Scheduler.startLoop(symphony_loop);
     Scheduler.startLoop(sensor_loop);
 }
@@ -63,7 +64,7 @@ void setup()
 // Print the version of the symphony module
 void print_module_version(void)
 {
-    ll_version_t firmwareVersion = { 0, 0, 0 };
+    ll_version_t firmwareVersion = {0, 0, 0};
     int32_t ret = symlink.getModuleFirmware(&firmwareVersion);
     Serial.print("Firmware: ");
     Serial.print(firmwareVersion.major);
@@ -79,60 +80,60 @@ void print_module_version(void)
 // Handle alert
 void alert()
 {
-	// TODO : Populate the transmit buffer
+    // TODO : Populate the transmit buffer
 }
 
 // CRC Calculation
 byte calc_crc(byte data)
 {
-	for(byte index = 0; index < 8; index++)
-	{
-		byte temp = data;
-		data <<= 1;
+    for (byte index = 0; index < 8; index++)
+    {
+        byte temp = data;
+        data <<= 1;
 
-		if(temp & 0x80)
-		{
-			data ^= 0x07;
-		}
-	}
+        if (temp & 0x80)
+        {
+            data ^= 0x07;
+        }
+    }
 
-	return data;
+    return data;
 }
 
 // Check if the data from the d6t is valid or not
 int D6T_checkPEC(byte buf[35], int pPEC)
 {
-	byte crc = calc_crc( 0x15 );
+    byte crc = calc_crc(0x15);
 
-	for(int i = 0; i < pPEC; i++)
-	{
-    	crc = calc_crc(buf[i] ^ crc);
-	}
+    for (int i = 0; i < pPEC; i++)
+    {
+        crc = calc_crc(buf[i] ^ crc);
+    }
 
-   	return (crc == buf[pPEC]);
+    return (crc == buf[pPEC]);
 }
 
 // Get the sensor data from the d6t
 void update_sensor(void)
 {
-	Wire.beginTransmission(D6T_ADDRESS);
-	Wire.write(byte(D6T_GET_INFO));
-	Wire.endTransmission();
+    Wire.beginTransmission(D6T_ADDRESS);
+    Wire.write(byte(D6T_GET_INFO));
+    Wire.endTransmission();
 
-	delay(1);
+    delay(1);
 
-	Wire.requestFrom(D6T_ADDRESS, 35);
-	for(byte i = 0; i < 35; i++)
+    Wire.requestFrom(D6T_ADDRESS, 35);
+    for (byte i = 0; i < 35; i++)
     {
-	    s_d6t_rxBuf[i] = Wire.read();
-  	}
-  	Wire.endTransmission();
+        s_d6t_rxBuf[i] = Wire.read();
+    }
+    Wire.endTransmission();
 
     s_d6t_ptat = ((float)s_d6t_rxBuf[1] << 8) | s_d6t_rxBuf[0];
 
     for (byte i = 1; i < 17; i++)
     {
-        s_d6t_tempData[i-1] = ((uint16_t)s_d6t_rxBuf[i * 2 + 1] << 8) | s_d6t_rxBuf[i * 2];
+        s_d6t_tempData[i - 1] = ((uint16_t)s_d6t_rxBuf[i * 2 + 1] << 8) | s_d6t_rxBuf[i * 2];
     }
 
     if (D6T_checkPEC(char buf, s_d6t_rxBuf[34]))
@@ -147,7 +148,7 @@ void update_sensor(void)
 
 void loop()
 {
-	// TODO
+    // TODO
 }
 
 // Symphony Module State Machine
@@ -156,25 +157,25 @@ void symphony_loop()
     s_currentSymphonyState = symlink.updateModemState();
     switch (currentSymphonyState)
     {
-        case SYMPHONY_READY:
-            if (SYMPHONY_TRANSMITTING != lastSymphonyState)
-            {
-                s_txData[0]++;
-                symlink.write(s_txData, sizeof(s_txData), true);
+    case SYMPHONY_READY:
+        if (SYMPHONY_TRANSMITTING != lastSymphonyState)
+        {
+            s_txData[0]++;
+            symlink.write(s_txData, sizeof(s_txData), true);
 
-                Serial.print("\t... Outbound payload is ");
-                symlink.printPayload(s_txData, sizeof(s_txData));
-            }
-            else
+            Serial.print("\t... Outbound payload is ");
+            symlink.printPayload(s_txData, sizeof(s_txData));
+        }
+        else
+        {
+            if (LL_TX_STATE_SUCCESS != symlink.getTransmitState())
             {
-                if (LL_TX_STATE_SUCCESS != symlink.getTransmitState())
-                {
-                    s_txData[0]--;
-                }
-
-                symlink.read(s_rxData, s_rxDataLength);
+                s_txData[0]--;
             }
-            break;
+
+            symlink.read(s_rxData, s_rxDataLength);
+        }
+        break;
     }
 
     s_lastSymphonyState = s_currentSymphonyState;
