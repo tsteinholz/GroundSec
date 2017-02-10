@@ -6,6 +6,8 @@
 //          /      |______________________________________|     \             //
 //         /__________)                                (_________\            //
 //                                                                            //
+//                             GroundSec(c) 2016                              //
+//                                                                            //
 //                        GNU GENERAL PUBLIC LICENSE                          //
 //                         Version 3, 29 June 2007                            //
 //                        													  //
@@ -21,6 +23,7 @@
 
 #define D6T_ADDRESS (0x0A)
 #define D6T_GET_INFO (0x4C)
+#define HUMAN_TEMP (37)
 
 // Symphony Variables
 SymphonyLink symlink;
@@ -30,7 +33,7 @@ static byte s_txData[256];
 static byte s_rxData[128];
 static byte s_rxDataLength;
 
-// D6T Sensor Variables TODO
+// D6T Sensor Variables
 static byte s_d6t_rxBuf[35];
 static float s_d6t_ptat;
 static uint16_t s_d6t_tempData[16];
@@ -114,7 +117,7 @@ int D6T_checkPEC(byte buf[35], int pPEC)
 }
 
 // Get the sensor data from the d6t
-void update_sensor(void)
+bool update_sensor(void)
 {
     Wire.beginTransmission(D6T_ADDRESS);
     Wire.write(byte(D6T_GET_INFO));
@@ -136,14 +139,7 @@ void update_sensor(void)
         s_d6t_tempData[i - 1] = ((uint16_t)s_d6t_rxBuf[i * 2 + 1] << 8) | s_d6t_rxBuf[i * 2];
     }
 
-    if (D6T_checkPEC(char buf, s_d6t_rxBuf[34]))
-    {
-        // TODO: Passed crc check
-    }
-    else
-    {
-        // TODO: Failed crc check
-    }
+    return D6T_checkPEC(char buf, s_d6t_rxBuf[34]);
 }
 
 void loop()
@@ -185,9 +181,18 @@ void symphony_loop()
 // D6T Driver + Alert Detection
 void sensor_loop()
 {
-    update_sensor();
+    if(update_sensor())
+    {
+        Serial.print("Transfered valid data from the D6T.\n");
 
-    // TODO: Detect if a person is present
+        // TODO: Detect if a person is present by pasrsing the sensor data
+    }
+    else
+    {
+        Serial.print("D6T Data was invalid! CRC check failed!\n");
+
+        // TODO: Report error to symphony? Keep embeded?
+    }
 
     delay(250);
 }
