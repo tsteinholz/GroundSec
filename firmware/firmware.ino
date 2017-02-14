@@ -38,9 +38,6 @@ static byte s_d6t_rxBuf[35];
 static float s_d6t_ptat;
 static uint16_t s_d6t_tempData[16];
 
-// Application Variables TODO
-static bool s_alert;
-
 void setup()
 {
     // Debug Prints
@@ -54,10 +51,7 @@ void setup()
     symlink.setAntenna(1);
 
     // Update the state of the SymphonyLink module (aka Modem)
-    lastSymphonyState = symlink.updateModemState();
-
-    // Initialize alert variable
-    s_alert = false;
+    s_lastSymphonyState = symlink.updateModemState();
 
     // Start the symphony and sensor tasks
     Scheduler.startLoop(symphony_loop);
@@ -83,7 +77,10 @@ void print_module_version(void)
 // Handle alert
 void alert()
 {
+    Serial.println("Alert! Sending Alert Data!");
+
     // TODO : Populate the transmit buffer
+    memcpy(s_txData, s_d6t_tempData, sizeof(uint16_t) * 16);
 }
 
 // CRC Calculation
@@ -132,29 +129,30 @@ bool update_sensor(void)
     }
     Wire.endTransmission();
 
-    s_d6t_ptat = ((float)s_d6t_rxBuf[1] << 8) | s_d6t_rxBuf[0];
+    s_d6t_ptat = (s_d6t_rxBuf[1] << 8) | s_d6t_rxBuf[0];
 
     for (byte i = 1; i < 17; i++)
     {
         s_d6t_tempData[i - 1] = ((uint16_t)s_d6t_rxBuf[i * 2 + 1] << 8) | s_d6t_rxBuf[i * 2];
     }
 
-    return D6T_checkPEC(char buf, s_d6t_rxBuf[34]);
+    return D6T_checkPEC(s_d6t_rxBuf, s_d6t_rxBuf[34]);
 }
 
 void loop()
 {
     // TODO
+
 }
 
 // Symphony Module State Machine
 void symphony_loop()
 {
     s_currentSymphonyState = symlink.updateModemState();
-    switch (currentSymphonyState)
+    switch (s_currentSymphonyState)
     {
     case SYMPHONY_READY:
-        if (SYMPHONY_TRANSMITTING != lastSymphonyState)
+        if (SYMPHONY_TRANSMITTING != s_lastSymphonyState)
         {
             s_txData[0]++;
             symlink.write(s_txData, sizeof(s_txData), true);
@@ -185,7 +183,14 @@ void sensor_loop()
     {
         Serial.print("Transfered valid data from the D6T.\n");
 
-        // TODO: Detect if a person is present by pasrsing the sensor data
+        // Detect if a person is present by pasrsing the sensor data
+        for (int i = 0; i < 35; i++)
+        {
+            if (s_d6t_tempData[i] > HUMAN_TEMP)
+            {
+                alert();
+            }
+        }
     }
     else
     {
