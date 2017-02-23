@@ -142,7 +142,7 @@ bool update_sensor(void)
 void loop()
 {
     // TODO
-
+    symphony_loop();
 }
 
 // Symphony Module State Machine
@@ -173,7 +173,8 @@ void symphony_loop()
     }
 
     s_lastSymphonyState = s_currentSymphonyState;
-    yield();
+    //yield();
+    delay(250);
 }
 
 // D6T Driver + Alert Detection
