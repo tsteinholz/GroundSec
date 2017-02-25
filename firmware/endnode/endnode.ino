@@ -17,7 +17,6 @@
 //                                                                            //
 //----------------------------------------------------------------------------//
 
-#include <Scheduler.h>
 #include <SymphonyLink.h>
 #include <Wire.h>
 
@@ -52,10 +51,6 @@ void setup()
 
     // Update the state of the SymphonyLink module (aka Modem)
     s_lastSymphonyState = symlink.updateModemState();
-
-    // Start the symphony and sensor tasks
-    Scheduler.startLoop(symphony_loop);
-    Scheduler.startLoop(sensor_loop);
 }
 
 // Print the version of the symphony module
@@ -141,12 +136,12 @@ bool update_sensor(void)
 
 void loop()
 {
-    // TODO
-    symphony_loop();
+    update_pir();
+    update_module();
 }
 
 // Symphony Module State Machine
-void symphony_loop()
+void update_module()
 {
     s_currentSymphonyState = symlink.updateModemState();
     switch (s_currentSymphonyState)
@@ -178,7 +173,7 @@ void symphony_loop()
 }
 
 // D6T Driver + Alert Detection
-void sensor_loop()
+void update_pir()
 {
     if(update_sensor())
     {
